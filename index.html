@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI SOC Analyst Assistant</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; padding: 2rem 1rem; }
+    .container { max-width: 720px; margin: 0 auto; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #30363d; }
+    .header-icon { width: 40px; height: 40px; background: #042C53; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .header-icon i { color: #85B7EB; font-size: 20px; }
+    .header-title { font-size: 18px; font-weight: 600; color: #e6edf3; }
+    .header-sub { font-size: 12px; color: #8b949e; margin-top: 2px; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-left: auto; background: #0d2b1f; color: #3fb950; border: 1px solid #238636; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; background: #161b22; padding: 4px; border-radius: 8px; border: 1px solid #30363d; }
+    .tab { flex: 1; padding: 8px; font-size: 12px; font-weight: 500; text-align: center; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #8b949e; }
+    .tab.active { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+    .panel { display: none; } .panel.active { display: block; }
+    label { font-size: 12px; color: #8b949e; display: block; margin-bottom: 6px; }
+    textarea, input[type=text] { width: 100%; font-size: 13px; font-family: 'Courier New', monospace; color: #e6edf3; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; resize: vertical; }
+    textarea { min-height: 90px; } input[type=text]:focus, textarea:focus { outline: none; border-color: #388bfd; }
+    .form-row { margin-bottom: 1rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+    .analyze-btn { width: 100%; padding: 10px; font-size: 13px; font-weight: 600; background: #1f6feb; color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+    .analyze-btn:hover { background: #388bfd; } .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1.25rem; margin-top: 1.5rem; }
+    .result-header { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #30363d; }
+    .sev-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+    .sev-critical { background: #3d1c1c; color: #f85149; border: 1px solid #6e1c1c; }
+    .sev-high { background: #2d1f00; color: #f0883e; border: 1px solid #5c3d00; }
+    .sev-medium { background: #0d2145; color: #79c0ff; border: 1px solid #1f4272; }
+    .sev-low { background: #0d2b1f; color: #3fb950; border: 1px solid #1a4428; }
+    .sev-info { background: #1e1b4b; color: #a5b4fc; border: 1px solid #3730a3; }
+    .result-section { margin-bottom: 1rem; }
+    .result-label { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .result-text { font-size: 13px; color: #e6edf3; line-height: 1.6; }
+    .mitre-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .mitre-pill { font-size: 11px; font-family: monospace; background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 3px 8px; color: #79c0ff; }
+    .action-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .action-list li { font-size: 13px; color: #e6edf3; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+    .action-list li i { color: #3fb950; font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+    .ioc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .ioc-item { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 8px 10px; }
+    .ioc-item-label { font-size: 10px; color: #8b949e; margin-bottom: 3px; }
+    .ioc-item-val { font-size: 12px; font-family: monospace; color: #e6edf3; word-break: break-all; }
+    .loading-dots { display: flex; gap: 4px; align-items: center; justify-content: center; padding: 2rem; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #388bfd; animation: blink 1.2s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; } .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100% { opacity: 0.2; } 40% { opacity: 1; } }
+    .example-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+    .example-btn { font-size: 11px; background: #21262d; border: 1px solid #30363d; border-radius: 20px; padding: 4px 12px; cursor: pointer; color: #8b949e; }
+    .example-btn:hover { color: #e6edf3; border-color: #8b949e; }
+    .github-link { text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #30363d; font-size: 12px; color: #8b949e; }
+    .github-link a { color: #388bfd; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-icon"><i class="ti ti-shield-lock"></i></div>
+    <div>
+      <div class="header-title">AI SOC Analyst Assistant</div>
+      <div class="header-sub">Alert triage · IOC analysis · MITRE ATT&CK mapping</div>
+    </div>
+    <div class="badge"><i class="ti ti-circle-filled"></i> Live</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('alert')"><i class="ti ti-alert-triangle"></i> Alert triage</button>
+    <button class="tab" onclick="switchTab('ioc')"><i class="ti ti-search"></i> IOC lookup</button>
+    <button class="tab" onclick="switchTab('log')"><i class="ti ti-file-text"></i> Log analyzer</button>
+  </div>
+
+  <div id="panel-alert" class="panel active">
+    <div class="form-row">
+      <label>Load an example</label>
+      <div class="example-btns">
+        <button class="example-btn" onclick="loadExample('bruteforce')">SSH brute force</button>
+        <button class="example-btn" onclick="loadExample('phishing')">Phishing email</button>
+        <button class="example-btn" onclick="loadExample('lateral')">Lateral movement</button>
+        <button class="example-btn" onclick="loadExample('exfil')">Data exfiltration</button>
+      </div>
+    </div>
+    <div class="form-row"><label>Alert type / source</label><input type="text" id="alert-type" placeholder="e.g. Wazuh Rule 5763, CrowdStrike EDR..."/></div>
+    <div class="form-row"><label>Raw alert data or log snippet</label><textarea id="alert-raw" placeholder="Paste raw alert, log line, or event details here..."></textarea></div>
+    <div class="form-grid">
+      <div><label>Source IP (optional)</label><input type="text" id="alert-src-ip" placeholder="e.g. 192.168.1.55"/></div>
+      <div><label>Destination / host (optional)</label><input type="text" id="alert-dest" placeholder="e.g. dc01.corp.local"/></div>
+    </div>
+    <button class="analyze-btn" id="btn-alert" onclick="runTriage()"><i class="ti ti-brain"></i> Run AI triage</button>
+  </div>
+
+  <div id="panel-ioc" class="panel">
+    <div class="form-row"><label>IOC value</label><input type="text" id="ioc-val" placeholder="IP address, domain, file hash, URL..."/></div>
+    <div class="form-row"><label>Additional context (optional)</label><textarea id="ioc-context" placeholder="Where was this observed? Any related events?" style="min-height:60px;"></textarea></div>
+    <button class="analyze-btn" id="btn-ioc" onclick="runIOC()"><i class="ti ti-brain"></i> Analyze IOC</button>
+  </div>
+
+  <div id="panel-log" class="panel">
+    <div class="form-row"><label>Log source</label><input type="text" id="log-type" placeholder="e.g. auth.log, Windows Event Log, Sysmon..."/></div>
+    <div class="form-row"><label>Log data</label><textarea id="log-raw" placeholder="Paste log entries here..." style="min-height:120px;"></textarea></div>
+    <button class="analyze-btn" id="btn-log" onclick="runLog()"><i class="ti ti-brain"></i> Analyze logs</button>
+  </div>
+
+  <div id="result-area"></div>
+
+  <div class="github-link">
+    Built by <a href="https://github.com/gyaljen123-sudo">gyaljen123-sudo</a> ·
+    <a href="https://github.com/gyaljen123-sudo/ai-soc-analyst-assistant">View source on GitHub</a>
+  </div>
+</div>
+
+<script>
+const examples = {
+  bruteforce: { type:'Wazuh Rule 5763',raw:'Jan 15 03:42:11 webserver sshd[2891]: Failed password for invalid user admin from 45.33.32.156 port 52813 ssh2\nJan 15 03:42:12 webserver sshd[2892]: Failed password for root from 45.33.32.156 port 52814 ssh2\nJan 15 03:42:13 webserver sshd[2893]: Failed password for ubuntu from 45.33.32.156 port 52815 ssh2',src:'45.33.32.156',dest:'webserver.prod (10.0.1.20)'},
+  phishing: { type:'Email gateway - Proofpoint',raw:'FROM: hr-noreply@m1crosoft-corp.com\nTO: john.doe@company.com\nSUBJECT: URGENT: Your password expires today\nLinks: http://m1crosoft-corp.com/resetpassword?token=abc123\nAttachment: invoice_2024.exe',src:'185.220.101.47',dest:'john.doe@company.com'},
+  lateral: { type:'Windows Security Event Log - Event ID 4624',raw:'Event ID: 4624 - Logon success\nAccount: CORP\\svc_backup\nLogon Type: 3 (Network)\nSource: 10.0.1.55\nDest: DC01 (10.0.0.5)\nPrevious 10 min: Same account accessed 6 other hosts via SMB',src:'10.0.1.55',dest:'DC01.corp.local'},
+  exfil: { type:'DLP + Firewall alert',raw:'Firewall DENY override by user: jsmith\nDest IP: 104.21.45.22\nProto: HTTPS port 443\nData transferred: 4.7GB outbound in 22 minutes\nProcess: powershell.exe -> Invoke-WebRequest\nFile types: .xlsx, .pdf, .docx',src:'10.0.2.88 (jsmith-laptop)',dest:'104.21.45.22'}
+};
+
+function loadExample(k){const e=examples[k];document.getElementById('alert-type').value=e.type;document.getElementById('alert-raw').value=e.raw;document.getElementById('alert-src-ip').value=e.src;document.getElementById('alert-dest').value=e.dest;}
+function switchTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById('panel-'+t).classList.add('active');event.target.closest('.tab').classList.add('active');document.getElementById('result-area').innerHTML='';}
+function showLoading(){document.getElementById('result-area').innerHTML='<div class="result-card"><div class="loading-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';}
+function setBtn(id,disabled){const b=document.getElementById(id);b.disabled=disabled;b.innerHTML=disabled?'<i class="ti ti-loader-2"></i> Analyzing...':'<i class="ti ti-brain"></i> '+(id==='btn-alert'?'Run AI triage':id==='btn-ioc'?'Analyze IOC':'Analyze logs');}
+
+function renderResult(d){
+  const sc={CRITICAL:'sev-critical',HIGH:'sev-high',MEDIUM:'sev-medium',LOW:'sev-low',INFO:'sev-info'}[d.severity]||'sev-info';
+  const mitre=(d.mitre||[]).map(m=>`<span class="mitre-pill">${m}</span>`).join('');
+  const actions=(d.actions||[]).map(a=>`<li><i class="ti ti-circle-check"></i>${a}</li>`).join('');
+  const iocs=(d.iocs||[]).map(i=>`<div class="ioc-item"><div class="ioc-item-label">${i.type}</div><div class="ioc-item-val">${i.value}</div></div>`).join('');
+  document.getElementById('result-area').innerHTML=`<div class="result-card">
+    <div class="result-header"><i class="ti ti-report-analytics" style="font-size:16px;color:#8b949e;"></i><span style="font-size:13px;font-weight:600;flex:1;">Triage report</span><span class="sev-badge ${sc}">${d.severity}</span></div>
+    <div class="result-section"><div class="result-label"><i class="ti ti-info-circle"></i> Summary</div><div class="result-text">${d.summary}</div></div>
+    ${d.threat_type?`<div class="result-section"><div class="result-label"><i class="ti ti-virus"></i> Threat classification</div><div class="result-text">${d.threat_type}</div></div>`:''}
+    ${mitre?`<div class="result-section"><div class="result-label"><i class="ti ti-sitemap"></i> MITRE ATT&CK</div><div class="mitre-pills">${mitre}</div></div>`:''}
+    ${iocs?`<div class="result-section"><div class="result-label"><i class="ti ti-eye"></i> Indicators of compromise</div><div class="ioc-grid">${iocs}</div></div>`:''}
+    ${actions?`<div class="result-section"><div class="result-label"><i class="ti ti-checklist"></i> Recommended actions</div><ul class="action-list">${actions}</ul></div>`:''}
+    ${d.false_positive_likelihood?`<div class="result-section"><div class="result-label"><i class="ti ti-adjustments"></i> False positive assessment</div><div class="result-text">${d.false_positive_likelihood}</div></div>`:''}
+  </div>`;
+}
+
+async function callClaude(prompt){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:`You are an expert SOC analyst AI assistant. Always respond ONLY with valid JSON, no markdown, no preamble. Schema: {"severity":"CRITICAL|HIGH|MEDIUM|LOW|INFO","summary":"2-3 sentence summary","threat_type":"classification","mitre":["Tactic: Technique (TXXXX)"],"iocs":[{"type":"IP|Domain|Hash|URL|Email|Process","value":"..."}],"actions":["action 1"],"false_positive_likelihood":"assessment"}`,messages:[{role:'user',content:prompt}]})});
+  const d=await r.json();
+  return JSON.parse(d.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
+}
+
+async function runTriage(){const raw=document.getElementById('alert-raw').value.trim();if(!raw){alert('Please paste alert data or load an example.');return;}setBtn('btn-alert',true);showLoading();try{const result=await callClaude(`Analyze this security alert:\nAlert type: ${document.getElementById('alert-type').value||'Unknown'}\nSource IP: ${document.getElementById('alert-src-ip').value||'N/A'}\nDestination: ${document.getElementById('alert-dest').value||'N/A'}\nRaw data:\n${raw}`);renderResult(result);}catch(e){document.getElementById('result-area').innerHTML=`<div class="result-card"><div class="result-text" style="color:#f85149;">Error: ${e.message}</div></div>`;}setBtn('btn-alert',false);}
+
+async function runIOC(){const val=document.getElementById('ioc-val').value.trim();if(!val){alert('Please enter an IOC value.');return;}setBtn('btn-ioc',true);showLoading();try{const result=await callClaude(`Analyze this IOC: ${val}\nContext: ${document.getElementById('ioc-context').value||'None'}`);renderResult(result);}catch(e){document.getElementById('result-area').innerHTML=`<div class="result-card"><div class="result-text">Error: ${e.message}</div></div>`;}setBtn('btn-ioc',false);}
+
+async function runLog(){const raw=document.getElementById('log-raw').value.trim();if(!raw){alert('Please paste log data.');return;}setBtn('btn-log',true);showLoading();try{const result=await callClaude(`Analyze these logs from ${document.getElementById('log-type').value||'unknown source'} for security anomalies:\n\n${raw}`);renderResult(result);}catch(e){document.getElementById('result-area').innerHTML=`<div class="result-card"><div class="result-text">Error: ${e.message}</div></div>`;}setBtn('btn-log',false);}
+</script>
+</body>
+</html>
